@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Header from '@/components/Header'
 import PromptInput from '@/components/PromptInput'
@@ -7,7 +9,21 @@ import ReviewResults from '@/components/ReviewResults'
 import EvaluationResults from '@/components/EvaluationResults'
 import WorkflowSummary from '@/components/WorkflowSummary'
 
+interface HistoryItem {
+  id: string
+  prompt: string
+  language: string
+  framework?: string
+  timestamp: number
+  generatedCode?: any
+  reviewResults?: any
+  evaluationResults?: any
+  workflowSummary?: any
+}
+
 export default function Home() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [prompt, setPrompt] = useState('')
   const [language, setLanguage] = useState('typescript')
   const [framework, setFramework] = useState('')
@@ -19,8 +35,16 @@ export default function Home() {
   const [workflowSummary, setWorkflowSummary] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [startTime, setStartTime] = useState<number | null>(null)
-
+  const [history, setHistory] = useState<HistoryItem[]>([])
+  const [showHistory, setShowHistory] = useState(false)
   const handleSubmit = async (promptText: string, lang: string, fw?: string) => {
+    // Check if user is authenticated
+    if (status === 'unauthenticated') {
+      setError('Please sign in to generate code')
+      router.push('/auth/signin')
+      return
+    }
+
     setIsProcessing(true)
     setError(null)
     setGeneratedCode(null)
@@ -32,7 +56,8 @@ export default function Home() {
 
     try {
       setCurrentStep('🤖 Generating code with AI...')
-      // Call API to start workflow
+      
+      // API route will fetch user's API keys from database
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
@@ -76,14 +101,61 @@ export default function Home() {
         setWorkflowSummary(data.summary)
       }
       
+      // Add to history
+      const historyItem: HistoryItem = {
+        id: Date.now().toString(),
+        prompt: promptText,
+        language: lang,
+        framework: fw || framework,
+        timestamp: Date.now(),
+        generatedCode: data.generation,
+        reviewResults: data.review,
+        evaluationResults: data.evaluation,
+        workflowSummary: data.summary
+      }
+      setHistory(prev => [historyItem, ...prev].slice(0, 10)) // Keep last 10
+      
       setCurrentStep('🎉 Complete!')
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
+      setError(errorMessage)
       setCurrentStep('')
+      console.error('Workflow error:', err)
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const handleRetry = () => {
+    setError(null)
+    if (prompt) {
+      handleSubmit(prompt, language, framework)
+    }
+  }
+
+  const handleReset = () => {
+    setPrompt('')
+    setLanguage('typescript')
+    setFramework('')
+    setIsProcessing(false)
+    setCurrentStep('')
+    setGeneratedCode(null)
+    setReviewResults(null)
+    setEvaluationResults(null)
+    setWorkflowSummary(null)
+    setError(null)
+    setStartTime(null)
+  }
+
+  const loadFromHistory = (item: HistoryItem) => {
+    setPrompt(item.prompt)
+    setLanguage(item.language)
+    setFramework(item.framework || '')
+    setGeneratedCode(item.generatedCode)
+    setReviewResults(item.reviewResults)
+    setEvaluationResults(item.evaluationResults)
+    setWorkflowSummary(item.workflowSummary)
   }
 
   return (
@@ -97,7 +169,7 @@ export default function Home() {
 
         <main className="container mx-auto px-4 py-8">
           {/* Hero Section */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               DevAgent Pro
             </h1>
@@ -106,20 +178,133 @@ export default function Home() {
             </p>
           </div>
 
+          {/* Quick Stats */}
+          {history.length > 0 && (
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="card text-center">
+                <div className="text-3xl font-bold text-blue-600">
+                  {history.length}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Total Sessions
+                </div>
+              </div>
+              <div className="card text-center">
+                <div className="text-3xl font-bold text-green-600">
+                  {history.reduce((sum, item) => sum + (item.generatedCode?.files?.length || 0), 0)}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Files Generated
+                </div>
+              </div>
+              <div className="card text-center">
+                <div className="text-3xl font-bold text-purple-600">
+                  {history.filter(item => item.reviewResults?.score >= 80).length}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  High Quality
+                </div>
+              </div>
+              <div className="card text-center">
+                <div className="text-3xl font-bold text-orange-600">
+                  {[...new Set(history.map(item => item.language))].length}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Languages Used
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Input Section */}
           <div className="mb-8">
-            <PromptInput
-              onSubmit={handleSubmit}
-              isProcessing={isProcessing}
-              initialLanguage={language}
-            />
+            <div className="flex gap-4 items-start">
+              <div className="flex-1">
+                <PromptInput
+                  onSubmit={handleSubmit}
+                  isProcessing={isProcessing}
+                  initialLanguage={language}
+                />
+              </div>
+              {history.length > 0 && (
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  title="View History"
+                >
+                  📜 History ({history.length})
+                </button>
+              )}
+            </div>
+
+            {/* History Panel */}
+            {showHistory && history.length > 0 && (
+              <div className="mt-4 card">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                    Recent Sessions
+                  </h3>
+                  <button
+                    onClick={() => setShowHistory(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {history.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => loadFromHistory(item)}
+                      className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-800 dark:text-white mb-1">
+                            {item.prompt.substring(0, 80)}...
+                          </p>
+                          <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                            <span className="badge badge-primary">{item.language}</span>
+                            {item.framework && <span className="badge">{item.framework}</span>}
+                            <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Error Display */}
           {error && (
-            <div className="mb-8 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg">
-              <p className="font-bold">Error</p>
-              <p>{error}</p>
+            <div className="mb-8 p-6 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <span className="text-3xl">⚠️</span>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-red-800 dark:text-red-200 mb-2">
+                    Something went wrong
+                  </h3>
+                  <p className="text-red-700 dark:text-red-300 mb-4">
+                    {error}
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleRetry}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      🔄 Retry
+                    </button>
+                    <button
+                      onClick={handleReset}
+                      className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

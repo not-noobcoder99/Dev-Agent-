@@ -1,4 +1,8 @@
+import { useSession, signOut } from 'next-auth/react'
+
 export default function Header() {
+  const { data: session, status } = useSession()
+
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md">
       <div className="container mx-auto px-4 py-4">
@@ -16,6 +20,48 @@ export default function Header() {
           </div>
 
           <nav className="flex items-center space-x-6">
+            {status === 'authenticated' ? (
+              <>
+                <a
+                  href="/profile"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                >
+                  👤 Profile
+                </a>
+                <a
+                  href="/settings"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                >
+                  ⚙️ Settings
+                </a>
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                    {session?.user?.name || session?.user?.email}
+                  </div>
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/auth/signin"
+                  className="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                >
+                  Sign In
+                </a>
+                <a
+                  href="/auth/signup"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  Sign Up
+                </a>
+              </>
+            )}
             <a
               href="https://github.com/not-noobcoder99/Dev-Agent-"
               target="_blank"
@@ -23,12 +69,6 @@ export default function Header() {
               className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
             >
               GitHub
-            </a>
-            <a
-              href="/docs"
-              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
-            >
-              Docs
             </a>
           </nav>
         </div>

@@ -49,9 +49,15 @@ export default function PromptInput({ onSubmit, isProcessing, initialLanguage = 
             id="prompt"
             rows={4}
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
-            placeholder="e.g., Create a REST API for managing tasks with user authentication..."
+            placeholder="e.g., Create a REST API for managing tasks with user authentication... (Ctrl+Enter to submit)"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault()
+                handleSubmit(e as any)
+              }
+            }}
             disabled={isProcessing}
           />
         </div>

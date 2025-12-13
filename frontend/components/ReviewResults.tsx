@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 interface ReviewResultsProps {
   data: {
     score: number
@@ -19,6 +21,8 @@ interface ReviewResultsProps {
 }
 
 export default function ReviewResults({ data }: ReviewResultsProps) {
+  const [severityFilter, setSeverityFilter] = useState<string>('all')
+  
   if (!data) return null
 
   const severityConfig = {
@@ -27,6 +31,10 @@ export default function ReviewResults({ data }: ReviewResultsProps) {
     minor: { icon: '🟢', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' },
     info: { icon: 'ℹ️', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
   }
+
+  const filteredIssues = data.issues ? data.issues.filter(issue => 
+    severityFilter === 'all' || issue.severity === severityFilter
+  ) : []
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600'
@@ -57,10 +65,23 @@ export default function ReviewResults({ data }: ReviewResultsProps) {
       {/* Issues List */}
       {data.issues && data.issues.length > 0 ? (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-            Issues Found ({data.issues.length})
-          </h3>
-          {data.issues.map((issue, index) => {
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+              Issues Found ({filteredIssues.length})
+            </h3>
+            <select
+              value={severityFilter}
+              onChange={(e) => setSeverityFilter(e.target.value)}
+              className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
+            >
+              <option value="all">All Severities</option>
+              <option value="critical">🔴 Critical</option>
+              <option value="major">🟡 Major</option>
+              <option value="minor">🟢 Minor</option>
+              <option value="info">ℹ️ Info</option>
+            </select>
+          </div>
+          {filteredIssues.map((issue, index) => {
             const config = severityConfig[issue.severity]
             return (
               <div

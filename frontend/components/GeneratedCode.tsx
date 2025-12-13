@@ -53,7 +53,7 @@ export default function GeneratedCode({ data }: GeneratedCodeProps) {
 
       {/* Code Display */}
       <div className="relative">
-        <div className="absolute top-2 right-2 z-10">
+        <div className="absolute top-2 right-2 z-10 flex gap-2">
           <button
             onClick={() => {
               navigator.clipboard.writeText(data.files[selectedFile].content)
@@ -62,10 +62,46 @@ export default function GeneratedCode({ data }: GeneratedCodeProps) {
           >
             📋 Copy
           </button>
+          <button
+            onClick={() => {
+              const blob = new Blob([data.files[selectedFile].content], { type: 'text/plain' })
+              const url = window.URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = data.files[selectedFile].path.split('/').pop() || 'code.txt'
+              document.body.appendChild(a)
+              a.click()
+              document.body.removeChild(a)
+              window.URL.revokeObjectURL(url)
+            }}
+            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+          >
+            💾 Download
+          </button>
+          <button
+            onClick={() => {
+              data.files.forEach((file) => {
+                const blob = new Blob([file.content], { type: 'text/plain' })
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = file.path.split('/').pop() || 'code.txt'
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                window.URL.revokeObjectURL(url)
+              })
+            }}
+            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+          >
+            📦 Download All
+          </button>
         </div>
 
         <pre className="code-block overflow-x-auto">
-          <code>{data.files[selectedFile].content}</code>
+          <code className={`language-${data.files[selectedFile].language}`}>
+            {data.files[selectedFile].content}
+          </code>
         </pre>
       </div>
 
