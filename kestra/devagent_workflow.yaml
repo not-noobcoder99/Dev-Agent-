@@ -1,0 +1,242 @@
+id: devagent_workflow
+namespace: devagent
+
+description: |
+  DevAgent Pro Workflow
+  Orchestrates the complete AI-powered development lifecycle:
+  1. Code Generation (Cline/Together AI)
+  2. Code Review (CodeRabbit/AI)
+  3. Quality Evaluation (Oumi)
+  4. Summary & Decision Making
+
+labels:
+  project: devagent-pro
+  environment: production
+
+inputs:
+  - id: user_prompt
+    type: STRING
+    required: true
+    description: Natural language description of code to generate
+
+  - id: language
+    type: STRING
+    defaults: typescript
+    description: Programming language for code generation
+
+  - id: framework
+    type: STRING
+    required: false
+    description: Optional framework to use
+
+variables:
+  output_dir: "./generated"
+  review_threshold: 70  # Minimum score to pass review
+
+tasks:
+  # Task 1: Code Generation
+  - id: generate_code
+    type: io.kestra.core.tasks.scripts.Node
+    description: Generate code using AI agent
+    script: |
+      const { CodeGenerator } = require('./agent/generate_code.ts');
+      
+      const generator = new CodeGenerator();
+      const result = await generator.generate({
+        prompt: '{{ inputs.user_prompt }}',
+        language: '{{ inputs.language }}',
+        framework: '{{ inputs.framework }}',
+        outputDir: '{{ variables.output_dir }}'
+      });
+      
+      console.log(JSON.stringify(result));
+    outputs:
+      - generation_result
+    
+  # Task 2: Code Review
+  - id: review_code
+    type: io.kestra.core.tasks.scripts.Node
+    description: Review generated code for quality issues
+    dependsOn:
+      - generate_code
+    script: |
+      const { CodeReviewer } = require('./agent/review_handler.ts');
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Get files from generation step
+      const generatedDir = '{{ variables.output_dir }}';
+      const files = findCodeFiles(generatedDir);
+      
+      const reviewer = new CodeReviewer();
+      const result = await reviewer.review({ files });
+      
+      console.log(JSON.stringify(result));
+      
+      function findCodeFiles(dir) {
+        const files = [];
+        const items = fs.readdirSync(dir);
+        
+        for (const item of items) {
+          const fullPath = path.join(dir, item);
+          const stat = fs.statSync(fullPath);
+          
+          if (stat.isFile() && /\.(ts|js|py|java)$/.test(item)) {
+            files.push(fullPath);
+          }
+        }
+        return files;
+      }
+    outputs:
+      - review_result
+
+  # Task 3: Quality Evaluation
+  - id: evaluate_quality
+    type: io.kestra.core.tasks.scripts.Python
+    description: Evaluate code quality using Oumi
+    dependsOn:
+      - review_code
+    script: |
+      import json
+      import sys
+      sys.path.append('.')
+      
+      from eval.oumi_eval import OumiEvaluator
+      
+      evaluator = OumiEvaluator()
+      
+      # Get review results from previous task
+      review_result = {{ outputs.review_code.review_result }}
+      
+      # Evaluate
+      eval_result = evaluator.evaluate({
+        'code_files': '{{ variables.output_dir }}',
+        'review_score': review_result.get('score', 0),
+        'issues': review_result.get('issues', [])
+      })
+      
+      print(json.dumps(eval_result))
+    outputs:
+      - eval_result
+
+  # Task 4: Decision Making
+  - id: make_decision
+    type: io.kestra.core.tasks.scripts.Bash
+    description: Make decision based on review and evaluation
+    dependsOn:
+      - evaluate_quality
+    script: |
+      #!/bin/bash
+      
+      REVIEW_SCORE={{ outputs.review_code.review_result.score }}
+      EVAL_SCORE={{ outputs.evaluate_quality.eval_result.overall_score }}
+      THRESHOLD={{ variables.review_threshold }}
+      
+      echo "Review Score: $REVIEW_SCORE"
+      echo "Evaluation Score: $EVAL_SCORE"
+      echo "Threshold: $THRESHOLD"
+      
+      if [ $REVIEW_SCORE -ge $THRESHOLD ] && [ $EVAL_SCORE -ge $THRESHOLD ]; then
+        echo "DECISION: PASS ✅"
+        echo "Code quality meets standards"
+        exit 0
+      else
+        echo "DECISION: NEEDS IMPROVEMENT ⚠️"
+        echo "Code quality below threshold"
+        exit 1
+      fi
+    outputs:
+      - decision
+
+  # Task 5: Generate Summary
+  - id: generate_summary
+    type: io.kestra.core.tasks.scripts.Node
+    description: Generate workflow summary
+    dependsOn:
+      - make_decision
+    allowFailure: true  # Run even if decision fails
+    script: |
+      const fs = require('fs');
+      const path = require('path');
+      
+      const summary = {
+        workflow_id: '{{ flow.id }}',
+        execution_id: '{{ execution.id }}',
+        timestamp: new Date().toISOString(),
+        input: {
+          prompt: '{{ inputs.user_prompt }}',
+          language: '{{ inputs.language }}',
+          framework: '{{ inputs.framework }}'
+        },
+        results: {
+          generation: {{ outputs.generate_code.generation_result }},
+          review: {{ outputs.review_code.review_result }},
+          evaluation: {{ outputs.evaluate_quality.eval_result }},
+          decision: '{{ outputs.make_decision.decision }}'
+        },
+        metrics: {
+          total_duration: '{{ execution.duration }}',
+          files_generated: {{ outputs.generate_code.generation_result.files.length }},
+          issues_found: {{ outputs.review_code.review_result.summary.total }},
+          quality_score: {{ outputs.evaluate_quality.eval_result.overall_score }}
+        }
+      };
+      
+      // Save summary
+      const summaryPath = path.join('{{ variables.output_dir }}', 'workflow-summary.json');
+      fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
+      
+      console.log(JSON.stringify(summary));
+    outputs:
+      - summary
+
+  # Task 6: Send Notification
+  - id: notify
+    type: io.kestra.core.tasks.log.Log
+    description: Log workflow completion
+    dependsOn:
+      - generate_summary
+    allowFailure: true
+    message: |
+      🎉 DevAgent Pro Workflow Completed!
+      
+      Execution ID: {{ execution.id }}
+      Status: {{ execution.state.current }}
+      Duration: {{ execution.duration }}
+      
+      Results:
+      - Files Generated: {{ outputs.generate_code.generation_result.files.length }}
+      - Review Score: {{ outputs.review_code.review_result.score }}/100
+      - Quality Score: {{ outputs.evaluate_quality.eval_result.overall_score }}/100
+      - Decision: {{ outputs.make_decision.decision }}
+      
+      Summary saved to: {{ variables.output_dir }}/workflow-summary.json
+
+# Error handling
+errors:
+  - id: on_failure
+    type: io.kestra.core.tasks.log.Log
+    message: |
+      ❌ Workflow Failed
+      Execution ID: {{ execution.id }}
+      Error: {{ execution.state.histories | last | attribute('state') | attribute('reason') }}
+
+# Triggers (optional - for scheduled runs)
+triggers:
+  - id: scheduled
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "0 0 * * *"  # Daily at midnight
+    disabled: true  # Disabled by default
+
+# Listeners (optional - for monitoring)
+listeners:
+  - id: on_completion
+    conditions:
+      - type: io.kestra.core.models.conditions.types.ExecutionStatusCondition
+        in:
+          - SUCCESS
+          - FAILED
+    tasks:
+      - id: log_completion
+        type: io.kestra.core.tasks.log.Log
+        message: "Workflow {{ execution.id }} completed with status {{ execution.state.current }}"

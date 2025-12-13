@@ -1,0 +1,35 @@
+{
+  "name": "devagent-pro",
+  "version": "1.0.0",
+  "description": "An Autonomous AI Agent for Code Generation, Review, and Workflow Automation",
+  "main": "index.js",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm start",
+    "agent:generate": "ts-node agent/generate_code.ts",
+    "agent:review": "ts-node agent/review_handler.ts",
+    "eval": "python eval/oumi_eval.py",
+    "kestra:flow": "kestra flow validate kestra/devagent_workflow.yaml"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "code-generation",
+    "automation",
+    "devops"
+  ],
+  "author": "not-noobcoder99",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "openai": "^4.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
+  }
+}
