@@ -1,413 +1,277 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import Header from '@/components/Header'
-import PromptInput from '@/components/PromptInput'
-import GeneratedCode from '@/components/GeneratedCode'
-import ReviewResults from '@/components/ReviewResults'
-import EvaluationResults from '@/components/EvaluationResults'
-import WorkflowSummary from '@/components/WorkflowSummary'
 
-interface HistoryItem {
-  id: string
-  prompt: string
-  language: string
-  framework?: string
-  timestamp: number
-  generatedCode?: any
-  reviewResults?: any
-  evaluationResults?: any
-  workflowSummary?: any
-}
-
-export default function Home() {
-  const { data: session, status } = useSession()
+export default function Landing() {
+  const { data: session } = useSession()
   const router = useRouter()
-  const [prompt, setPrompt] = useState('')
-  const [language, setLanguage] = useState('typescript')
-  const [framework, setFramework] = useState('')
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [currentStep, setCurrentStep] = useState('')
-  const [generatedCode, setGeneratedCode] = useState<any>(null)
-  const [reviewResults, setReviewResults] = useState<any>(null)
-  const [evaluationResults, setEvaluationResults] = useState<any>(null)
-  const [workflowSummary, setWorkflowSummary] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [startTime, setStartTime] = useState<number | null>(null)
-  const [history, setHistory] = useState<HistoryItem[]>([])
-  const [showHistory, setShowHistory] = useState(false)
-  const handleSubmit = async (promptText: string, lang: string, fw?: string) => {
-    // Check if user is authenticated
-    if (status === 'unauthenticated') {
-      setError('Please sign in to generate code')
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY })
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [])
+
+  const handleGetStarted = () => {
+    if (session) {
+      router.push('/dashboard')
+    } else {
       router.push('/auth/signin')
-      return
     }
-
-    setIsProcessing(true)
-    setError(null)
-    setGeneratedCode(null)
-    setReviewResults(null)
-    setEvaluationResults(null)
-    setWorkflowSummary(null)
-    setStartTime(Date.now())
-    setCurrentStep('🚀 Initializing workflow...')
-
-    try {
-      setCurrentStep('🤖 Generating code with AI...')
-      
-      // API route will fetch user's API keys from database
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: promptText,
-          language: lang,
-          framework: fw || framework,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to start workflow')
-      }
-
-      const data = await response.json()
-      
-      // Update states with results progressively
-      if (data.generation) {
-        setCurrentStep('✅ Code generated! 🔍 Reviewing...')
-        setGeneratedCode(data.generation)
-        await new Promise(resolve => setTimeout(resolve, 500))
-      }
-      
-      if (data.review) {
-        setCurrentStep('✅ Review complete! 📊 Evaluating quality...')
-        setReviewResults(data.review)
-        await new Promise(resolve => setTimeout(resolve, 500))
-      }
-      
-      if (data.evaluation) {
-        setCurrentStep('✅ Evaluation complete! 📝 Finalizing...')
-        setEvaluationResults(data.evaluation)
-        await new Promise(resolve => setTimeout(resolve, 500))
-      }
-      
-      if (data.summary) {
-        const duration = startTime ? ((Date.now() - startTime) / 1000).toFixed(1) : '0'
-        data.summary.metrics.total_duration = `${duration}s`
-        setWorkflowSummary(data.summary)
-      }
-      
-      // Add to history
-      const historyItem: HistoryItem = {
-        id: Date.now().toString(),
-        prompt: promptText,
-        language: lang,
-        framework: fw || framework,
-        timestamp: Date.now(),
-        generatedCode: data.generation,
-        reviewResults: data.review,
-        evaluationResults: data.evaluation,
-        workflowSummary: data.summary
-      }
-      setHistory(prev => [historyItem, ...prev].slice(0, 10)) // Keep last 10
-      
-      setCurrentStep('🎉 Complete!')
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
-      setError(errorMessage)
-      setCurrentStep('')
-      console.error('Workflow error:', err)
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const handleRetry = () => {
-    setError(null)
-    if (prompt) {
-      handleSubmit(prompt, language, framework)
-    }
-  }
-
-  const handleReset = () => {
-    setPrompt('')
-    setLanguage('typescript')
-    setFramework('')
-    setIsProcessing(false)
-    setCurrentStep('')
-    setGeneratedCode(null)
-    setReviewResults(null)
-    setEvaluationResults(null)
-    setWorkflowSummary(null)
-    setError(null)
-    setStartTime(null)
-  }
-
-  const loadFromHistory = (item: HistoryItem) => {
-    setPrompt(item.prompt)
-    setLanguage(item.language)
-    setFramework(item.framework || '')
-    setGeneratedCode(item.generatedCode)
-    setReviewResults(item.reviewResults)
-    setEvaluationResults(item.evaluationResults)
-    setWorkflowSummary(item.workflowSummary)
   }
 
   return (
     <>
       <Head>
-        <title>DevAgent Pro - AI Code Generation & Review</title>
+        <title>DevAgent - AI-Powered Development Assistant</title>
+        <meta name="description" content="Transform ideas into production-ready code with AI" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-        <Header />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white overflow-hidden">
+        {/* Animated Background */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div 
+            className="absolute w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"
+            style={{
+              left: `${mousePosition.x / 20}px`,
+              top: `${mousePosition.y / 20}px`,
+              transition: 'all 0.3s ease-out'
+            }}
+          />
+          <div 
+            className="absolute w-96 h-96 bg-blue-500/20 rounded-full blur-3xl right-0 bottom-0"
+            style={{
+              right: `${mousePosition.x / 30}px`,
+              bottom: `${mousePosition.y / 30}px`,
+              transition: 'all 0.3s ease-out'
+            }}
+          />
+        </div>
 
-        <main className="container mx-auto px-4 py-8">
-          {/* Hero Section */}
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              DevAgent Pro
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              AI-Powered Code Generation, Review & Workflow Automation
-            </p>
-          </div>
-
-          {/* Quick Stats */}
-          {history.length > 0 && (
-            <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="card text-center">
-                <div className="text-3xl font-bold text-blue-600">
-                  {history.length}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Total Sessions
-                </div>
+        {/* Navigation */}
+        <nav className="relative z-10 container mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center transform hover:scale-110 transition-transform">
+                <span className="text-2xl font-bold">D</span>
               </div>
-              <div className="card text-center">
-                <div className="text-3xl font-bold text-green-600">
-                  {history.reduce((sum, item) => sum + (item.generatedCode?.files?.length || 0), 0)}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Files Generated
-                </div>
-              </div>
-              <div className="card text-center">
-                <div className="text-3xl font-bold text-purple-600">
-                  {history.filter(item => item.reviewResults?.score >= 80).length}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  High Quality
-                </div>
-              </div>
-              <div className="card text-center">
-                <div className="text-3xl font-bold text-orange-600">
-                  {[...new Set(history.map(item => item.language))].length}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Languages Used
-                </div>
-              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                DevAgent
+              </span>
             </div>
-          )}
-
-          {/* Input Section */}
-          <div className="mb-8">
-            <div className="flex gap-4 items-start">
-              <div className="flex-1">
-                <PromptInput
-                  onSubmit={handleSubmit}
-                  isProcessing={isProcessing}
-                  initialLanguage={language}
-                />
-              </div>
-              {history.length > 0 && (
+            <div className="flex items-center space-x-6">
+              <a href="#features" className="hover:text-purple-400 transition-colors">Features</a>
+              <a href="#how-it-works" className="hover:text-purple-400 transition-colors">How It Works</a>
+              {session ? (
                 <button
-                  onClick={() => setShowHistory(!showHistory)}
-                  className="px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  title="View History"
+                  onClick={() => router.push('/dashboard')}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full hover:shadow-lg hover:shadow-purple-500/50 transition-all"
                 >
-                  📜 History ({history.length})
+                  Dashboard
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push('/auth/signin')}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full hover:shadow-lg hover:shadow-purple-500/50 transition-all"
+                >
+                  Sign In
                 </button>
               )}
             </div>
+          </div>
+        </nav>
 
-            {/* History Panel */}
-            {showHistory && history.length > 0 && (
-              <div className="mt-4 card">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                    Recent Sessions
-                  </h3>
-                  <button
-                    onClick={() => setShowHistory(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                  >
-                    ✕
-                  </button>
+        {/* Hero Section */}
+        <section className="relative z-10 container mx-auto px-6 py-20">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <div className="inline-block px-4 py-2 bg-purple-500/20 rounded-full border border-purple-500/30 backdrop-blur-sm">
+                <span className="text-sm"> Powered by Advanced AI Models</span>
+              </div>
+              
+              <h1 className="text-6xl md:text-7xl font-bold leading-tight">
+                Transform Ideas Into
+                <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                  Production Code
+                </span>
+              </h1>
+              
+              <p className="text-xl text-gray-300 leading-relaxed">
+                DevAgent is your AI-powered development companion that generates, reviews, and optimizes code in seconds. 
+                Build faster, code smarter, deploy confidently.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={handleGetStarted}
+                  className="group px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-lg font-semibold hover:shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-1 transition-all"
+                >
+                  Get Started Free
+                  <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+              </div>
+
+              <div className="flex items-center space-x-8 text-sm text-gray-400">
+                <div>
+                  <div className="text-2xl font-bold text-white">10K+</div>
+                  <div>Developers</div>
                 </div>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {history.map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => loadFromHistory(item)}
-                      className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800 dark:text-white mb-1">
-                            {item.prompt.substring(0, 80)}...
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                            <span className="badge badge-primary">{item.language}</span>
-                            {item.framework && <span className="badge">{item.framework}</span>}
-                            <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div>
+                  <div className="text-2xl font-bold text-white">1M+</div>
+                  <div>Code Generated</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-white">99.9%</div>
+                  <div>Uptime</div>
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* 3D Code Preview */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-3xl blur-3xl opacity-30 animate-pulse"></div>
+              <div className="relative bg-slate-800/50 backdrop-blur-xl rounded-3xl p-8 border border-purple-500/30 transform hover:scale-105 transition-transform duration-500">
+                <div className="flex items-center space-x-2 mb-6">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+                <pre className="text-sm text-gray-300 overflow-hidden">{`// ✨ AI-Generated Code
+import { useState } from 'react'
+
+function TodoApp() {
+  const [tasks, setTasks] = useState([])
+  
+  const addTask = (task) => {
+    setTasks([...tasks, {
+      id: Date.now(),
+      text: task,
+      completed: false
+    }])
+  }
+  
+  return (
+    <div className="app">
+      <h1>My Tasks</h1>
+      {/* Complete implementation... */}
+    </div>
+  )
+}`}</pre>
+                <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                  <span>⚡ Generated in 2.3s</span>
+                  <span>✔ Production Ready</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="relative z-10 container mx-auto px-6 py-20">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-bold mb-4">
+              Why Developers <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Love DevAgent</span>
+            </h2>
+            <p className="text-xl text-gray-400">Everything you need to build amazing software, faster</p>
           </div>
 
-          {/* Error Display */}
-          {error && (
-            <div className="mb-8 p-6 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <span className="text-3xl">⚠️</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-red-800 dark:text-red-200 mb-2">
-                    Something went wrong
-                  </h3>
-                  <p className="text-red-700 dark:text-red-300 mb-4">
-                    {error}
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleRetry}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      🔄 Retry
-                    </button>
-                    <button
-                      onClick={handleReset}
-                      className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                    >
-                      Reset
-                    </button>
-                  </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                ),
+                title: 'Lightning Fast Generation',
+                description: 'Generate complete, production-ready applications in seconds. Not snippets - full projects with 5-10+ files.',
+                stat: '10x faster',
+                gradient: 'from-purple-500 to-blue-500'
+              },
+              {
+                icon: (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                ),
+                title: 'AI-Powered Quality',
+                description: 'Every line analyzed for security, performance, and best practices with specific recommendations.',
+                stat: 'Catch 80% of bugs',
+                gradient: 'from-blue-500 to-cyan-500'
+              },
+              {
+                icon: (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                ),
+                title: 'Smart Workflows',
+                description: 'Automated generation, review, and optimization. Focus on innovation while AI handles repetitive tasks.',
+                stat: 'Save 15+ hours/week',
+                gradient: 'from-pink-500 to-purple-500'
+              }
+            ].map((feature, idx) => (
+              <div key={idx} className="group bg-slate-800/30 backdrop-blur-xl rounded-2xl p-8 border border-purple-500/20 hover:border-purple-500/50 transition-all hover:transform hover:-translate-y-2">
+                <div className={`w-16 h-16 bg-gradient-to-br ${feature.gradient} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {feature.icon}
+                  </svg>
                 </div>
+                <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
+                <p className="text-gray-400 leading-relaxed mb-4">{feature.description}</p>
+                <div className="text-sm text-purple-400">{feature.stat} →</div>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
+        </section>
 
-          {/* Loading Indicator */}
-          {isProcessing && (
-            <div className="mb-8">
-              <div className="card">
-                <div className="flex items-center space-x-4">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
-                      Processing Your Request
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      {currentStep}
-                    </p>
-                    <div className="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full transition-all duration-500 animate-pulse" style={{width: '60%'}}></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Results Section */}
-          <div className="space-y-8">
-            {/* Generated Code */}
-            {generatedCode && (
-              <GeneratedCode data={generatedCode} />
-            )}
-
-            {/* Review Results */}
-            {reviewResults && (
-              <ReviewResults data={reviewResults} />
-            )}
-
-            {/* Evaluation Results */}
-            {evaluationResults && (
-              <EvaluationResults data={evaluationResults} />
-            )}
-
-            {/* Workflow Summary */}
-            {workflowSummary && (
-              <WorkflowSummary data={workflowSummary} />
-            )}
+        {/* How It Works */}
+        <section id="how-it-works" className="relative z-10 container mx-auto px-6 py-20">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-bold mb-4">
+              From Idea to <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Production</span>
+            </h2>
+            <p className="text-xl text-gray-400">Four simple steps</p>
           </div>
 
-          {/* Features Section */}
-          {!generatedCode && !isProcessing && (
-            <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <FeatureCard
-                icon="🤖"
-                title="AI Code Generation"
-                description="Generate production-ready code from natural language using Cline & Together AI"
-              />
-              <FeatureCard
-                icon="🔍"
-                title="Automated Review"
-                description="Get instant code review feedback powered by CodeRabbit AI"
-              />
-              <FeatureCard
-                icon="🎯"
-                title="Quality Evaluation"
-                description="Comprehensive quality scoring with Oumi evaluation framework"
-              />
-              <FeatureCard
-                icon="⚡"
-                title="Workflow Orchestration"
-                description="Seamless automation with Kestra workflow engine"
-              />
-              <FeatureCard
-                icon="📊"
-                title="Real-time Dashboard"
-                description="Monitor your code generation pipeline in real-time"
-              />
-              <FeatureCard
-                icon="🚀"
-                title="Fast Deployment"
-                description="Deploy instantly with Vercel infrastructure"
-              />
-            </div>
-          )}
-        </main>
+          <div className="grid md:grid-cols-4 gap-8">
+            {[
+              { num: 1, title: 'Describe Your Idea', desc: 'Tell DevAgent what you want to build' },
+              { num: 2, title: 'AI Generates Code', desc: 'Complete applications in seconds' },
+              { num: 3, title: 'Review & Optimize', desc: 'AI analyzes quality and security' },
+              { num: 4, title: 'Deploy', desc: 'Production-ready code immediately' }
+            ].map((step) => (
+              <div key={step.num} className="text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-6">
+                  {step.num}
+                </div>
+                <h3 className="text-xl font-bold mb-3">{step.title}</h3>
+                <p className="text-gray-400">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="relative z-10 container mx-auto px-6 py-20">
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl p-12 text-center">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Ready to 10x Your Development Speed?
+            </h2>
+            <button
+              onClick={handleGetStarted}
+              className="px-12 py-4 bg-white text-purple-600 rounded-full text-lg font-bold hover:shadow-2xl transform hover:-translate-y-1 transition-all"
+            >
+              Start Building for Free
+            </button>
+          </div>
+        </section>
 
         {/* Footer */}
-        <footer className="mt-16 py-8 border-t border-gray-200 dark:border-gray-700">
-          <div className="container mx-auto px-4 text-center text-gray-600 dark:text-gray-400">
-            <p>Built with ❤️ using Cline, CodeRabbit, Kestra, Oumi, Together AI & Vercel</p>
-            <p className="mt-2 text-sm">© 2025 DevAgent Pro. All rights reserved.</p>
+        <footer className="relative z-10 container mx-auto px-6 py-12 border-t border-gray-700/50">
+          <div className="text-center text-gray-400">
+            <p>© 2025 DevAgent. Built with ❤️ by developer, for developers.</p>
           </div>
         </footer>
       </div>
     </>
-  )
-}
-
-function FeatureCard({ icon, title, description }: { icon: string; title: string; description: string }) {
-  return (
-    <div className="card hover:shadow-xl transition-shadow duration-300">
-      <div className="text-4xl mb-4">{icon}</div>
-      <h3 className="text-xl font-bold mb-2 text-gray-800 dark:text-gray-100">{title}</h3>
-      <p className="text-gray-600 dark:text-gray-300">{description}</p>
-    </div>
   )
 }

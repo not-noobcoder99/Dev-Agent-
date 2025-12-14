@@ -28,12 +28,12 @@ interface GenerationResult {
 
 class CodeGenerator {
   private apiKey: string;
-  private baseURL: string = 'https://api.together.xyz/v1';
+  private baseURL: string = 'https://api.groq.com/openai/v1';
 
   constructor() {
-    this.apiKey = process.env.TOGETHER_API_KEY || '';
+    this.apiKey = process.env.GROQ_API_KEY || '';
     if (!this.apiKey) {
-      console.warn('⚠️  TOGETHER_API_KEY not found. Using mock generation mode.');
+      console.warn('⚠️  GROQ_API_KEY not found. Using mock generation mode.');
     }
   }
 
@@ -53,8 +53,8 @@ class CodeGenerator {
       // Create system prompt for code generation
       const systemPrompt = this.buildSystemPrompt(request);
       
-      // Call Together AI API
-      const response = await this.callTogetherAI(systemPrompt, request.prompt);
+      // Call Groq AI API
+      const response = await this.callGroqAI(systemPrompt, request.prompt);
       
       // Parse response and extract code
       const files = this.parseGeneratedCode(response, request);
@@ -110,9 +110,9 @@ Repeat for each file needed.`;
   }
 
   /**
-   * Call Together AI API
+   * Call Groq AI API
    */
-  private async callTogetherAI(systemPrompt: string, userPrompt: string): Promise<string> {
+  private async callGroqAI(systemPrompt: string, userPrompt: string): Promise<string> {
     const response = await fetch(`${this.baseURL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -120,10 +120,10 @@ Repeat for each file needed.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { role: 'user', content: prompt }
         ],
         temperature: 0.7,
         max_tokens: 4000,
@@ -131,10 +131,10 @@ Repeat for each file needed.`;
     });
 
     if (!response.ok) {
-      throw new Error(`Together AI API error: ${response.statusText}`);
+      throw new Error(`Groq API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     return data.choices[0].message.content;
   }
 

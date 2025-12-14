@@ -33,10 +33,10 @@ interface ReviewResult {
 
 class CodeReviewer {
   private apiKey: string;
-  private baseURL: string = 'https://api.together.xyz/v1';
+  private baseURL: string = 'https://api.groq.com/openai/v1';
 
   constructor() {
-    this.apiKey = process.env.TOGETHER_API_KEY || '';
+    this.apiKey = process.env.GROQ_API_KEY || '';
     this.apiKey = process.env.CODERABBIT_API_KEY || this.apiKey;
   }
 
@@ -245,7 +245,7 @@ Format your response as JSON array of issues.`;
         return [];
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       const aiResponse = data.choices[0].message.content;
 
       // Parse AI response

@@ -6,7 +6,7 @@ import { useRouter } from 'next/router'
 export default function Settings() {
   const router = useRouter()
   const [apiKeys, setApiKeys] = useState({
-    togetherAI: '',
+    groq: '',
     oumi: '',
     kestra: ''
   })
@@ -79,39 +79,40 @@ export default function Settings() {
               </p>
 
               <div className="space-y-6">
-                {/* Together AI */}
+                {/* Groq AI */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Together AI API Key
+                    Groq API Key
                     <span className="ml-2 text-xs text-blue-600">
-                      (Required for AI code generation)
+                      (Required for AI code generation - FREE with 6,000 requests/day!)
                     </span>
                   </label>
                   <div className="flex gap-2">
                     <input
                       type={showKeys ? 'text' : 'password'}
-                      value={apiKeys.togetherAI}
-                      onChange={(e) => setApiKeys({ ...apiKeys, togetherAI: e.target.value })}
-                      placeholder="Enter your Together AI API key"
+                      value={apiKeys.groq}
+                      onChange={(e) => setApiKeys({ ...apiKeys, groq: e.target.value })}
+                      placeholder="Enter your Groq API key (starts with gsk_)"
                       className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     />
                     <button
-                      onClick={() => handleTest('Together AI')}
+                      onClick={() => handleTest('Groq')}
                       className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
                       Test
                     </button>
                   </div>
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Get your API key from{' '}
+                    Get your FREE API key from{' '}
                     <a
-                      href="https://api.together.xyz/settings/api-keys"
+                      href="https://console.groq.com/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"
                     >
-                      Together AI Dashboard
+                      Groq Console
                     </a>
+                    {' '}(No credit card required!)
                   </p>
                 </div>
 
@@ -120,7 +121,7 @@ export default function Settings() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Oumi API Key
                     <span className="ml-2 text-xs text-gray-500">
-                      (Optional - for quality evaluation)
+                      (Optional - Alternative AI provider for code generation)
                     </span>
                   </label>
                   <div className="flex gap-2">
@@ -148,6 +149,7 @@ export default function Settings() {
                     >
                       Oumi Dashboard
                     </a>
+                    {' '}(Fallback if Groq fails)
                   </p>
                 </div>
 
@@ -205,7 +207,7 @@ export default function Settings() {
                 </button>
                 <button
                   onClick={() => {
-                    setApiKeys({ togetherAI: '', oumi: '', kestra: '' })
+                    setApiKeys({ groq: '', oumi: '', kestra: '' })
                     localStorage.removeItem('devagent_api_keys')
                   }}
                   className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"

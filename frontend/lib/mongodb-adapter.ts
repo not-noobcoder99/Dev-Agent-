@@ -38,8 +38,19 @@ export class MongoDBAdapter {
       updatedAt: new Date(),
     };
 
-    const result = await db.collection('users').insertOne(user as any);
-    return { ...user, _id: result.insertedId.toString() };
+    try {
+      const result = await db.collection('users').insertOne(user as any);
+      return { ...user, _id: result.insertedId.toString() };
+    } catch (error: any) {
+      if (error.code === 11000) {
+        // Duplicate key error - user already exists
+        const existingUser = await db.collection<User>('users').findOne({ email: user.email });
+        if (existingUser) {
+          return { ...existingUser, _id: existingUser._id?.toString() } as User;
+        }
+      }
+      throw error;
+    }
   }
 
   static async updateUser(email: string, updates: Partial<User>): Promise<User | null> {

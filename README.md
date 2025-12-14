@@ -3,9 +3,11 @@
 **An Autonomous AI Agent for Code Generation, Review, and Workflow Automation**
 
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black)](https://vercel.com)
-[![Cline](https://img.shields.io/badge/Powered%20by-Cline-blue)](https://github.com/cline/cline)
-[![CodeRabbit](https://img.shields.io/badge/Reviewed%20by-CodeRabbit-orange)](https://coderabbit.ai)
+[![Groq](https://img.shields.io/badge/Powered%20by-Groq-green)](https://groq.com)
+[![Oumi](https://img.shields.io/badge/Evaluated%20by-Oumi%20AI-blue)](https://oumi.ai)
 [![Kestra](https://img.shields.io/badge/Orchestrated%20with-Kestra-purple)](https://kestra.io)
+
+> 🎉 **NEW v2.0**: Now generates **professional, production-ready applications** with 5-10+ files, AI-powered quality evaluation with Oumi, and enterprise workflow orchestration with Kestra! [See What's New](#-whats-new-v20)
 
 ---
 
@@ -32,16 +34,44 @@ Developers waste hours on:
 ```
 User Input (Natural Language)
         ↓
-[Cline] Code Generation
+[Groq AI] Professional Code Generation (FREE, 6K req/day)
         ↓
-[CodeRabbit] Automated Review
+[Oumi AI] Intelligent Quality Evaluation
         ↓
-[Kestra] Workflow Orchestration
+[Static Analysis] Code Review & Security Check
         ↓
-[Oumi] Quality Evaluation
+[Kestra] Advanced Workflow Orchestration (Optional)
         ↓
-[Vercel] Dashboard UI
+[Next.js] Production Dashboard
 ```
+
+---
+
+## ✨ What's New (v2.0)
+
+### 🚀 **Professional Code Generation**
+- **10x Better Output**: Complete applications with 5-10+ files, not just snippets
+- **8000 Token Limit**: 2x more code per generation
+- **Senior Engineer Prompts**: Production-ready code with best practices
+- **Complete Structure**: Source, tests, config, docs - everything you need
+
+### 🧠 **Oumi AI Evaluation**
+- **Real AI Analysis**: Intelligent quality assessment
+- **5 Quality Metrics**: Code quality, security, maintainability, performance, best practices
+- **Actionable Recommendations**: Specific improvements suggested
+- **Smart Fallback**: Enhanced heuristic analysis if Oumi unavailable
+
+### ⚡ **Groq Integration**
+- **FREE Tier**: 6,000 requests/day at no cost
+- **Lightning Fast**: 10-100x faster than competitors
+- **Production Ready**: Reliable and scalable
+- **Server-Side**: No API key required from users
+
+### 🔄 **Kestra Orchestration** (Optional)
+- **Enterprise Workflows**: Multi-step orchestration
+- **Parallel Processing**: Faster execution
+- **Monitoring**: Real-time tracking and logs
+- **Error Recovery**: Automatic retries and fallbacks
 
 ---
 

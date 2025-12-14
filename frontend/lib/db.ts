@@ -5,7 +5,13 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {};
+const options = {
+  serverApi: {
+    version: '1' as const,
+    strict: true,
+    deprecationErrors: true,
+  },
+};
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
