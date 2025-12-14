@@ -234,20 +234,6 @@ devagent-pro/
 
 ---
 
-## 🛣️ Roadmap
-
-### Phase 1 (MVP - 2 Days) ✅
-- Core agent logic
-- Basic UI
-- All sponsor integrations
-
-### Phase 2 (Future)
-- IDE plugin
-- Multi-repo support
-- Advanced CI/CD integration
-
----
-
 ## 📝 Environment Variables
 
 ```env
