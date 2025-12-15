@@ -2,14 +2,23 @@
 
 This guide explains how to properly deploy the Dev-Agent Next.js frontend to Vercel from this monorepo.
 
-## Problem That Was Fixed
+## Problems That Were Fixed
 
+### 1. Vercel Configuration Issue
 The original `vercel.json` was fighting against Vercel's monorepo support by:
 - Skipping the install command entirely
 - Manually doing `cd frontend && npm install` in the build command
 - Specifying output directory relative to repo root
 
 This caused **recurring deployment failures** because Vercel's caching and build system couldn't work consistently.
+
+### 2. TypeScript Path Alias Resolution Error
+The `frontend/tsconfig.json` had path aliases configured (`@/*`) but was missing `baseUrl`, causing:
+```
+Type error: Cannot find module '@/components/Header' or its corresponding type declarations.
+```
+
+This failed during `next build` type-checking phase on Vercel, even though it might work locally.
 
 ## Current Configuration
 
@@ -41,6 +50,21 @@ Dev-Agent-/
 
 #### `.vercelignore`
 Excludes `agent/`, `eval/`, and other non-frontend files from deployment uploads.
+
+#### `frontend/tsconfig.json`
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",      // ← CRITICAL: Required for path alias resolution
+    "paths": {
+      "@/*": ["./*"]     // Maps @/components to ./components, etc.
+    },
+    // ... other options
+  }
+}
+```
+
+**Why this matters**: Without `baseUrl`, TypeScript cannot resolve the `@/` path alias during Vercel's build process, causing compilation errors.
 
 ## Setup Instructions
 
