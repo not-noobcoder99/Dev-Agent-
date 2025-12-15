@@ -1,0 +1,27 @@
+# Agent and evaluation tooling (not needed for frontend deployment)
+agent/
+eval/
+demo/
+
+# Root-level configs not needed for frontend
+tsconfig.json
+
+# Development files
+*.md
+!frontend/**/*.md
+
+# Git
+.git/
+.gitignore
+
+# Dependencies
+node_modules/
+
+# Testing
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Local env files
+.env*.local
